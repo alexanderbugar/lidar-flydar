@@ -20,11 +20,16 @@ struct Frame {
     uint16_t stampMs;
 };
 
+uint8_t crc8(const uint8_t* data, size_t size);
+
 class Parser {
 public:
     bool push(uint8_t byte, Frame& out);
 
+    uint32_t badCrc() const { return badCrc_; }
+
 private:
+    uint32_t badCrc_ = 0;
     enum class State { Header, Length, Body };
     State state_ = State::Header;
     uint8_t bytes_[frameBytes] = {};
