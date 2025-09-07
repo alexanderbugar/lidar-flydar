@@ -1,7 +1,9 @@
 #include <Arduino.h>
 #include "config.h"
+#include "ld_lidar.h"
 
 HardwareSerial lidar(1);
+ld::Parser parser;
 
 void setup() {
     Serial.begin(115200);
@@ -9,12 +11,13 @@ void setup() {
 }
 
 void loop() {
-    // stop after a few lines or the debug port falls behind immediately
-    static unsigned dumped = 0;
-    while (lidar.available()) {
-        const int byte = lidar.read();
-        if (byte < 0 || dumped >= 192) continue;
-        Serial.printf("%02X%c", byte, (++dumped % 16) ? ' ' : '\n');
+    ld::Frame frame;
+    static unsigned frames = 0;
+    for (int byte; (byte = lidar.read()) >= 0;) {
+        if (parser.push(byte, frame) && ++frames % 16 == 0) {
+            Serial.printf("%u %u..%u %u mm\n", frame.stampMs,
+                          frame.startCdeg, frame.endCdeg, frame.points[0].mm);
+        }
     }
     delay(1);
 }
