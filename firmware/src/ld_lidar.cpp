@@ -65,13 +65,17 @@ bool Parser::push(uint8_t byte, Frame& out) {
         return false;
     }
 
+    const uint16_t start = word(bytes_ + 4);
+    const uint16_t end = word(bytes_ + 42);
+    if (start >= 36000 || end >= 36000) return false;
+
     out.speedDps = word(bytes_ + 2);
-    out.startCdeg = word(bytes_ + 4);
+    out.startCdeg = start;
     for (size_t i = 0; i < pointCount; ++i) {
         const uint8_t* p = bytes_ + 6 + 3 * i;
         out.points[i] = {word(p), p[2]};
     }
-    out.endCdeg = word(bytes_ + 42);
+    out.endCdeg = end;
     out.stampMs = word(bytes_ + 44);
     return true;
 }
