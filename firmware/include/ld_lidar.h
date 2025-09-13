@@ -20,6 +20,7 @@ struct Frame {
     uint16_t stampMs;
 };
 
+float angleRad(const Frame& frame, size_t point);
 uint8_t crc8(const uint8_t* data, size_t size);
 
 class Parser {

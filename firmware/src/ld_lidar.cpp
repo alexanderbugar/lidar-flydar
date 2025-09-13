@@ -30,6 +30,13 @@ uint16_t word(const uint8_t* p) {
 }
 }
 
+float angleRad(const Frame& frame, size_t point) {
+    // the angles on the wire are centidegrees. lost most of tuesday to that.
+    const float fraction = float(point) / (pointCount - 1);
+    const int span = int(frame.endCdeg) - int(frame.startCdeg);
+    return (frame.startCdeg + span * fraction) * 0.0001745329252f;
+}
+
 uint8_t crc8(const uint8_t* data, size_t size) {
     uint8_t crc = 0;
     for (size_t i = 0; i < size; ++i) crc = crcTable[crc ^ data[i]];
