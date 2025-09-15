@@ -33,8 +33,9 @@ uint16_t word(const uint8_t* p) {
 float angleRad(const Frame& frame, size_t point) {
     // the angles on the wire are centidegrees. lost most of tuesday to that.
     const float fraction = float(point) / (pointCount - 1);
-    const int span = int(frame.endCdeg) - int(frame.startCdeg);
-    return (frame.startCdeg + span * fraction) * 0.0001745329252f;
+    const unsigned span = (36000u + frame.endCdeg - frame.startCdeg) % 36000u;
+    const float angle = frame.startCdeg + span * fraction;
+    return (angle >= 36000.0f ? angle - 36000.0f : angle) * 0.0001745329252f;
 }
 
 uint8_t crc8(const uint8_t* data, size_t size) {

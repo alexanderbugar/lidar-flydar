@@ -26,7 +26,7 @@ void NetStream::send(const ld::Frame& frame) {
     packet.stampMs = frame.stampMs;
     for (size_t i = 0; i < ld::pointCount; ++i) {
         const float cdeg = ld::angleRad(frame, i) * (18000.0f / PI);
-        packet.points[i] = {uint16_t(cdeg + 0.5f), frame.points[i].mm,
+        packet.points[i] = {uint16_t(unsigned(cdeg + 0.5f) % 36000u), frame.points[i].mm,
                             frame.points[i].intensity};
     }
     const auto* bytes = reinterpret_cast<const uint8_t*>(&packet);
