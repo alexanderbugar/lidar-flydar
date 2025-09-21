@@ -1,4 +1,5 @@
 #include "ld_lidar.h"
+#include <cstring>
 
 namespace ld {
 namespace {
@@ -44,6 +45,11 @@ uint8_t crc8(const uint8_t* data, size_t size) {
     return crc;
 }
 
+void Parser::reset() {
+    state_ = State::Header;
+    used_ = 0;
+}
+
 bool Parser::push(uint8_t byte, Frame& out) {
     switch (state_) {
     case State::Header:
@@ -64,12 +70,27 @@ bool Parser::push(uint8_t byte, Frame& out) {
     case State::Body:
         bytes_[used_++] = byte;
         if (used_ < frameBytes) return false;
-        state_ = State::Header;
+        reset();
         break;
     }
 
     if (crc8(bytes_, frameBytes - 1) != bytes_[frameBytes - 1]) {
         ++badCrc_;
+        // a missing byte can eat the next header. keep the candidate suffix.
+        for (size_t i = 1; i < frameBytes; ++i) {
+            if (bytes_[i] != header) continue;
+            if (i + 1 == frameBytes) {
+                bytes_[0] = header;
+                state_ = State::Length;
+                break;
+            }
+            if (bytes_[i + 1] == verLen) {
+                used_ = frameBytes - i;
+                memmove(bytes_, bytes_ + i, used_);
+                state_ = State::Body;
+                break;
+            }
+        }
         return false;
     }
 

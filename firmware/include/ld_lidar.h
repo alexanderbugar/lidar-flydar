@@ -27,6 +27,7 @@ class Parser {
 public:
     bool push(uint8_t byte, Frame& out);
 
+    void reset();
     uint32_t badCrc() const { return badCrc_; }
 
 private:
