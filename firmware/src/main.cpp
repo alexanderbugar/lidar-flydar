@@ -3,11 +3,13 @@
 #include "ld_lidar.h"
 #include "net_stream.h"
 #include "imu.h"
+#include "attitude.h"
 
 HardwareSerial lidar(1);
 ld::Parser parser;
 NetStream net;
 Imu imu(Wire);
+Attitude attitude;
 bool imuOk = false;
 
 void setup() {
@@ -22,12 +24,17 @@ void setup() {
 
 void loop() {
     static uint32_t lastImu = 0;
-    if (imuOk && millis() - lastImu >= 1000) {
-        lastImu = millis();
+    static unsigned reports = 0;
+    const uint32_t now = micros();
+    if (imuOk && now - lastImu >= 5000) {
+        const float dt = (now - lastImu) * 1e-6f;
+        lastImu = now;
         ImuSample sample;
         if (imu.read(sample)) {
-            Serial.printf("# a %.3f %.3f %.3f g\n",
-                          sample.accelG.x, sample.accelG.y, sample.accelG.z);
+            attitude.update(sample, dt);
+            if (++reports % 200 == 0) {
+                Serial.printf("# tilt %.2f %.2f\n", attitude.roll(), attitude.pitch());
+            }
         }
     }
 
