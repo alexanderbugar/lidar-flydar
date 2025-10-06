@@ -15,7 +15,8 @@ void setup() {
     Serial.begin(921600);
     Wire.begin(cfg::headSda, cfg::headScl, cfg::headI2cHz);
     Wire.setTimeOut(4);
-    imuOk = imu.begin();
+    imuOk = imu.begin() && imu.calibrate();
+    if (!imuOk) Serial.println("# imu missing or moving at boot");
     lidar.begin(cfg::lidarBaud, SERIAL_8N1, cfg::lidarRx, -1);
 }
 
