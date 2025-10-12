@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <atomic>
 #include "config.h"
 #include "ld_lidar.h"
 #include "net_stream.h"
@@ -12,12 +13,21 @@ Imu imu(Wire);
 Attitude attitude;
 bool imuOk = false;
 QueueHandle_t frames = nullptr;
+std::atomic<uint32_t> queueDrops{0};
 
 void readLidar(void*) {
     ld::Frame frame;
     for (;;) {
         for (int byte; (byte = lidar.read()) >= 0;) {
-            if (parser.push(byte, frame)) xQueueSend(frames, &frame, 0);
+            if (!parser.push(byte, frame)) continue;
+            if (xQueueSend(frames, &frame, 0) == pdTRUE) continue;
+
+            // a stalled laptop should leave a hole, not bring back old walls.
+            ld::Frame stale;
+            if (xQueueReceive(frames, &stale, 0) == pdTRUE)
+                queueDrops.fetch_add(1, std::memory_order_relaxed);
+            if (xQueueSend(frames, &frame, 0) != pdTRUE)
+                queueDrops.fetch_add(1, std::memory_order_relaxed);
         }
         vTaskDelay(1);
     }
@@ -34,7 +44,8 @@ void reportTilt() {
         if (imu.read(sample)) {
             attitude.update(sample, dt);
             if (++reports % 200 == 0) {
-                Serial.printf("# tilt %.2f %.2f\n", attitude.roll(), attitude.pitch());
+                Serial.printf("# tilt %.2f %.2f qdrop=%lu\n", attitude.roll(),
+                              attitude.pitch(), (unsigned long)queueDrops.load());
             }
         }
     }
