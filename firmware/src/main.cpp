@@ -5,11 +5,14 @@
 #include "net_stream.h"
 #include "imu.h"
 #include "attitude.h"
+#include "mag.h"
 
 HardwareSerial lidar(1);
 ld::Parser parser;
 NetStream net;
 Imu imu(Wire);
+Mag mag(Wire);
+bool magOk = false;
 Attitude attitude;
 bool imuOk = false;
 QueueHandle_t frames = nullptr;
@@ -57,6 +60,14 @@ void work(void*) {
     unsigned seen = 0;
     for (;;) {
         reportTilt();
+        static uint32_t lastMag = 0;
+        if (magOk && millis() - lastMag >= 20) {
+            lastMag = millis();
+            Vec3 magCounts;
+            if (mag.read(magCounts)) {
+                Serial.printf("mag,%.0f,%.0f,%.0f\n", magCounts.x, magCounts.y, magCounts.z);
+            }
+        }
         if (xQueueReceive(frames, &frame, 1) != pdTRUE) continue;
         if (net.ready()) {
             net.send(frame);
@@ -79,6 +90,7 @@ void setup() {
     Serial.begin(921600);
     Wire.begin(cfg::headSda, cfg::headScl, cfg::headI2cHz);
     Wire.setTimeOut(4);
+    magOk = mag.begin();
     imuOk = imu.begin() && imu.calibrate();
     if (!imuOk) Serial.println("# imu missing or moving at boot");
     lidar.setRxBufferSize(2048);
