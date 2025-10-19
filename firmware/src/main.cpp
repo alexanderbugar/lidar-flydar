@@ -61,7 +61,7 @@ void work(void*) {
     for (;;) {
         reportTilt();
         static uint32_t lastMag = 0;
-        if (magOk && millis() - lastMag >= 20) {
+        if (cfg::dumpMag && magOk && millis() - lastMag >= 20) {
             lastMag = millis();
             Vec3 magCounts;
             if (mag.read(magCounts)) {

@@ -18,3 +18,7 @@ came. check the pinout for your lidar harness before feeding it 5v.
 
 i2c is 100 khz. use 3.3v pull-ups and count the ones already on the
 breakout. no 5v pull-ups on the esp. keep the jumpers short.
+
+qmc5883l joins the same pair on the head, address 0x0d. the gy-271
+listing said hmc; actually scan the bus. for a mag capture set
+`dumpMag = true` and save the lines starting with `mag,`.
