@@ -37,14 +37,16 @@ void readLidar(void*) {
 }
 
 void reportTilt() {
-    static uint32_t lastImu = 0;
+    static uint32_t lastPoll = 0;
+    static uint32_t lastSample = 0;
     static unsigned reports = 0;
     const uint32_t now = micros();
-    if (imuOk && now - lastImu >= 5000) {
-        const float dt = (now - lastImu) * 1e-6f;
-        lastImu = now;
+    if (imuOk && now - lastPoll >= 5000) {
+        lastPoll = now;
         ImuSample sample;
         if (imu.read(sample)) {
+            const float dt = lastSample ? (now - lastSample) * 1e-6f : 0;
+            lastSample = now;
             attitude.update(sample, dt);
             if (++reports % 200 == 0) {
                 Serial.printf("# tilt %.2f %.2f qdrop=%lu\n", attitude.roll(),
