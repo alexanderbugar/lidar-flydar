@@ -24,5 +24,5 @@ float Attitude::heading(Vec3 m) const {
     const float cp = cosf(pitch_), sp = sinf(pitch_);
     const float horizontalX = cp*m.x + sp*(sr*m.y + cr*m.z);
     const float horizontalY = cr*m.y - sr*m.z;
-    return atan2f(horizontalY, horizontalX);
+    return atan2f(-horizontalY, horizontalX);
 }
