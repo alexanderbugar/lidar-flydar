@@ -38,3 +38,13 @@ bool Mag::read(Vec3& counts) {
     counts = {float(word(raw)), float(word(raw + 2)), float(word(raw + 4))};
     return true;
 }
+
+Vec3 Mag::corrected(Vec3 counts) {
+    const float v[] = {counts.x - cfg::magBias[0], counts.y - cfg::magBias[1],
+                       counts.z - cfg::magBias[2]};
+    float out[3]{};
+    for (int row = 0; row < 3; ++row)
+        for (int col = 0; col < 3; ++col)
+            out[row] += cfg::magMatrix[row][col] * v[col];
+    return {out[0], out[1], out[2]};
+}

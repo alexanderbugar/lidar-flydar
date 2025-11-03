@@ -8,6 +8,13 @@ constexpr int headScl = 9;
 constexpr unsigned headI2cHz = 100000;
 constexpr unsigned char imuAddress = 0x68;
 constexpr bool dumpMag = false;
+constexpr bool magCalibrated = false;
+constexpr float magBias[3] = {};
+constexpr float magMatrix[3][3] = {
+    {1.0f/3000, 0, 0},
+    {0, 1.0f/3000, 0},
+    {0, 0, 1.0f/3000},
+};
 constexpr unsigned char magAddress = 0x0d;
 constexpr int lidarRx = 18;
 constexpr unsigned lidarBaud = 230400;

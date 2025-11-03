@@ -7,6 +7,7 @@ public:
     explicit Mag(TwoWire& bus) : bus_(bus) {}
     bool begin();
     bool read(Vec3& counts);
+    static Vec3 corrected(Vec3 counts);
 
 private:
     TwoWire& bus_;

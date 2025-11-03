@@ -63,11 +63,17 @@ void work(void*) {
     for (;;) {
         reportTilt();
         static uint32_t lastMag = 0;
-        if (cfg::dumpMag && magOk && millis() - lastMag >= 20) {
+        static unsigned magReads = 0;
+        if (magOk && millis() - lastMag >= 20) {
             lastMag = millis();
             Vec3 magCounts;
             if (mag.read(magCounts)) {
-                Serial.printf("mag,%.0f,%.0f,%.0f\n", magCounts.x, magCounts.y, magCounts.z);
+                if (cfg::dumpMag) {
+                    Serial.printf("mag,%.0f,%.0f,%.0f\n", magCounts.x,
+                                  magCounts.y, magCounts.z);
+                } else if (cfg::magCalibrated && ++magReads % 50 == 0) {
+                    Serial.printf("# heading %.3f\n", attitude.heading(Mag::corrected(magCounts)));
+                }
             }
         }
         if (xQueueReceive(frames, &frame, 1) != pdTRUE) continue;

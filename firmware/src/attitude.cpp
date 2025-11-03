@@ -18,3 +18,11 @@ void Attitude::update(const ImuSample& sample, float dt) {
     roll_ += (1 - retain) * remainderf(ax - roll_, 6.28318530718f);
     pitch_ += (1 - retain) * (ay - pitch_);
 }
+
+float Attitude::heading(Vec3 m) const {
+    const float cr = cosf(roll_), sr = sinf(roll_);
+    const float cp = cosf(pitch_), sp = sinf(pitch_);
+    const float horizontalX = cp*m.x + sp*(sr*m.y + cr*m.z);
+    const float horizontalY = cr*m.y - sr*m.z;
+    return atan2f(-horizontalY, horizontalX);
+}
