@@ -2,9 +2,7 @@
 
 #include <Wire.h>
 
-struct Vec3 {
-    float x, y, z;
-};
+#include "math3d.h"
 
 struct ImuSample {
     Vec3 accelG;

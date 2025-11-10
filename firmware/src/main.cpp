@@ -63,7 +63,7 @@ void work(void*) {
     for (;;) {
         reportTilt();
         static uint32_t lastMag = 0;
-        static unsigned magReads = 0;
+        static uint32_t lastGoodMag = 0;
         if (magOk && millis() - lastMag >= 20) {
             lastMag = millis();
             Vec3 magCounts;
@@ -71,8 +71,10 @@ void work(void*) {
                 if (cfg::dumpMag) {
                     Serial.printf("mag,%.0f,%.0f,%.0f\n", magCounts.x,
                                   magCounts.y, magCounts.z);
-                } else if (cfg::magCalibrated && ++magReads % 50 == 0) {
-                    Serial.printf("# heading %.3f\n", attitude.heading(Mag::corrected(magCounts)));
+                } else if (cfg::magCalibrated) {
+                    const float dt = lastGoodMag ? (lastMag - lastGoodMag) * 0.001f : 0;
+                    attitude.correctHeading(Mag::corrected(magCounts), dt);
+                    lastGoodMag = lastMag;
                 }
             }
         }

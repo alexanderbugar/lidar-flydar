@@ -5,12 +5,12 @@
 class Attitude {
 public:
     void update(const ImuSample& sample, float dt);
-    float roll() const { return roll_; }
-    float heading(Vec3 magBody) const;
-    float pitch() const { return pitch_; }
+    void correctHeading(Vec3 magBody, float dt);
+    float roll() const;
+    float pitch() const;
+    Quat rotation() const { return q_; }
 
 private:
     bool seeded_ = false;
-    float roll_ = 0;
-    float pitch_ = 0;
+    Quat q_;
 };
