@@ -6,6 +6,7 @@
 #include "imu.h"
 #include "attitude.h"
 #include "mag.h"
+#include "gimbal.h"
 
 HardwareSerial lidar(1);
 ld::Parser parser;
@@ -14,6 +15,7 @@ Imu imu(Wire);
 Mag mag(Wire);
 bool magOk = false;
 Attitude attitude;
+Gimbal gimbal;
 bool imuOk = false;
 QueueHandle_t frames = nullptr;
 std::atomic<uint32_t> queueDrops{0};
@@ -103,6 +105,7 @@ void setup() {
     magOk = mag.begin();
     imuOk = imu.begin() && imu.calibrate();
     if (!imuOk) Serial.println("# imu missing or moving at boot");
+    if (cfg::driveMotor && !gimbal.begin()) Serial.println("# pwm init failed");
     lidar.setRxBufferSize(2048);
     lidar.begin(cfg::lidarBaud, SERIAL_8N1, cfg::lidarRx, -1);
     frames = xQueueCreate(16, sizeof(ld::Frame));

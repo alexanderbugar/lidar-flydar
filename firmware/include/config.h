@@ -1,6 +1,12 @@
 #pragma once
 
 namespace cfg {
+constexpr bool driveMotor = false;
+constexpr int motorA = 5;
+constexpr int motorB = 6;
+constexpr int motorC = 7;
+constexpr int motorEn = 10;
+constexpr float motorSupply = 12;
 constexpr char udpHost[] = "192.168.1.50";
 constexpr unsigned udpPort = 4210;
 constexpr int headSda = 8;
