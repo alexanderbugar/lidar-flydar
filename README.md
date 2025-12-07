@@ -10,4 +10,4 @@ for udp set the laptop address in config.h and put `#define WIFI_SSID "…"`
 and `#define WIFI_PASSWORD "…"` in firmware/include/wifi_local.h.
 
 viewer: install tools/requirements.txt and run `python tools/viewer.py`.
-the serial plot is still usefull when the laptop is on the wrong wifi.
+the serial plot is still useful when the laptop is on the wrong wifi.
