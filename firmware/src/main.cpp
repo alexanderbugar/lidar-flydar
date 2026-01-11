@@ -118,5 +118,6 @@ void setup() {
 }
 
 void loop() {
-    delay(1000);
+    gimbal.tick();
+    delay(1);
 }
