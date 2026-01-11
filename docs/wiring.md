@@ -22,3 +22,7 @@ breakout. no 5v pull-ups on the esp. keep the jumpers short.
 qmc5883l joins the same pair on the head, address 0x0d. the gy-271
 listing said hmc; actually scan the bus. for a mag capture set
 `dumpMag = true` and save the lines starting with `mag,`.
+
+fixed side PWM is GPIO5/6/7 to IN1/2/3, GPIO10 to EN. motor phases go to
+the mini, never through the ring. the mini uses the 12V rail with a shared
+ground. leave `driveMotor = false` until the head can turn freely.
