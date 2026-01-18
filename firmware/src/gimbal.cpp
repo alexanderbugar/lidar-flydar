@@ -30,21 +30,38 @@ bool Gimbal::begin() {
     const bool busOk = Wire1.begin(cfg::axisSda, cfg::axisScl, cfg::axisI2cHz);
     Wire1.setTimeOut(2);
     encoderOk_ = busOk && encoder_.begin();
-    if (!cfg::driveMotor) return encoderOk_;
+    if (!cfg::driveMotor || !encoderOk_) return encoderOk_;
     driver_.voltage_power_supply = cfg::motorSupply;
     if (!driver_.init()) return false;
     motor_.linkDriver(&driver_);
-    motor_.controller = MotionControlType::velocity_openloop;
+    motor_.linkSensor(&encoder_);
+    motor_.controller = MotionControlType::velocity;
+    motor_.torque_controller = TorqueControlType::voltage;
+    motor_.voltage_sensor_align = 1.0f;
+    motor_.PID_velocity.P = 0.32f;
+    motor_.PID_velocity.I = 1.2f;
+    motor_.LPF_velocity.Tf = 0.035f;
+    // motor_.controller = MotionControlType::velocity_openloop;  // sang, didn't turn under load
     motor_.voltage_limit = cfg::motorVoltage;
     motor_.velocity_limit = 2;
-    running_ = motor_.init() != 0;
+    running_ = motor_.init() && motor_.initFOC() && encoder_.valid();
     if (!running_) driver_.disable();
     return running_;
 }
 
 void Gimbal::tick() {
-    if (encoderOk_) encoder_.update();
-    if (running_) motor_.move(cfg::motorSpeedRad);
+    if (!running_) {
+        if (encoderOk_) encoder_.update();
+        return;
+    }
+
+    motor_.loopFOC();
+    if (!encoder_.valid()) {
+        motor_.disable();
+        running_ = false;
+        return;
+    }
+    motor_.move(cfg::motorSpeedRad);
 }
 
 bool Gimbal::position(float& radians) {
