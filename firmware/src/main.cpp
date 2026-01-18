@@ -105,7 +105,7 @@ void setup() {
     magOk = mag.begin();
     imuOk = imu.begin() && imu.calibrate();
     if (!imuOk) Serial.println("# imu missing or moving at boot");
-    if (cfg::driveMotor && !gimbal.begin()) Serial.println("# pwm init failed");
+    if (!gimbal.begin()) Serial.println("# gimbal init failed");
     lidar.setRxBufferSize(2048);
     lidar.begin(cfg::lidarBaud, SERIAL_8N1, cfg::lidarRx, -1);
     frames = xQueueCreate(16, sizeof(ld::Frame));
@@ -119,5 +119,11 @@ void setup() {
 
 void loop() {
     gimbal.tick();
+    static unsigned long last = 0;
+    if (millis() - last >= 1000) {
+        last = millis();
+        float angle;
+        if (gimbal.position(angle)) Serial.printf("# axis %.3f rad\n", angle);
+    }
     delay(1);
 }
