@@ -66,6 +66,7 @@ void Gimbal::tick() {
 
 bool Gimbal::position(float& radians) {
     if (!encoderOk_ || !encoder_.valid()) return false;
-    radians = encoder_.getMechanicalAngle();
+    radians = remainderf(cfg::axisSign * (encoder_.getMechanicalAngle() -
+                                           cfg::axisZeroRad), 2.0f*PI);
     return true;
 }

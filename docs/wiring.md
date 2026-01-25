@@ -30,3 +30,8 @@ ground. leave `driveMotor = false` until the head can turn freely.
 as5600 stays on the base: GPIO11 SDA, GPIO12 SCL, 3.3V and GND. it's
 on Wire1 at 400 khz so a bad ring contact doesn't stop commutation.
 check the magnet status before enabling the motor. use a diametric magnet.
+
+zero the axis with the scan plane flat. read `# axis` with sign +1 and
+zero 0 first, then put that number in `axisZeroRad`. increasing angle
+should tilt +Y toward +Z looking along the right-handed X axis.
+flip `axisSign` if it goes the other way.
