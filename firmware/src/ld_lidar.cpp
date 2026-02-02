@@ -96,7 +96,8 @@ bool Parser::push(uint8_t byte, Frame& out) {
 
     const uint16_t start = word(bytes_ + 4);
     const uint16_t end = word(bytes_ + 42);
-    if (start >= 36000 || end >= 36000) return false;
+    const uint16_t stamp = word(bytes_ + 44);
+    if (start >= 36000 || end >= 36000 || stamp >= 30000) return false;
 
     out.speedDps = word(bytes_ + 2);
     out.startCdeg = start;
@@ -105,7 +106,7 @@ bool Parser::push(uint8_t byte, Frame& out) {
         out.points[i] = {word(p), p[2]};
     }
     out.endCdeg = end;
-    out.stampMs = word(bytes_ + 44);
+    out.stampMs = stamp;
     return true;
 }
 }

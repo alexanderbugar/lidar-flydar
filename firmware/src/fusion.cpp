@@ -1,0 +1,25 @@
+#include "fusion.h"
+#include "config.h"
+#include <algorithm>
+#include <cstdlib>
+
+int64_t scan::FrameClock::observe(uint16_t stampMs, int64_t receivedUs) {
+    constexpr int64_t wireUs = (ld::frameBytes * 10000000LL + cfg::lidarBaud - 1)
+                              / cfg::lidarBaud;
+    constexpr int wrapMs = 30000;
+    const int deltaMs = (stampMs + wrapMs - lastStamp_) % wrapMs;
+    const int64_t arrivalUs = receivedUs - wireUs;
+    const int64_t gapUs = receivedUs - lastRxUs_;
+    if (!lastRxUs_ || gapUs > 1000000 || std::abs(gapUs - deltaMs*1000LL) > 100000) {
+        sensorUs_ = 0;
+        offsetUs_ = arrivalUs;
+    } else {
+        sensorUs_ += deltaMs*1000LL;
+        // uart scheduling only makes a packet late. follow the low edge
+        // and let it creep up slowly for clock drift.
+        offsetUs_ = std::min<int64_t>(offsetUs_ + 2, arrivalUs - sensorUs_);
+    }
+    lastStamp_ = stampMs;
+    lastRxUs_ = receivedUs;
+    return offsetUs_ + sensorUs_;
+}

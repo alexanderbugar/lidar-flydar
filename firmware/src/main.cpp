@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <atomic>
+#include <esp_timer.h>
 #include "config.h"
 #include "ld_lidar.h"
 #include "net_stream.h"
@@ -7,6 +8,7 @@
 #include "attitude.h"
 #include "mag.h"
 #include "gimbal.h"
+#include "fusion.h"
 
 HardwareSerial lidar(1);
 ld::Parser parser;
@@ -21,14 +23,16 @@ QueueHandle_t frames = nullptr;
 std::atomic<uint32_t> queueDrops{0};
 
 void readLidar(void*) {
-    ld::Frame frame;
+    scan::TimedFrame frame;
+    scan::FrameClock clock;
     for (;;) {
         for (int byte; (byte = lidar.read()) >= 0;) {
-            if (!parser.push(byte, frame)) continue;
+            if (!parser.push(byte, frame.lidar)) continue;
+            frame.endUs = clock.observe(frame.lidar.stampMs, esp_timer_get_time());
             if (xQueueSend(frames, &frame, 0) == pdTRUE) continue;
 
             // a stalled laptop should leave a hole, not bring back old walls.
-            ld::Frame stale;
+            scan::TimedFrame stale;
             if (xQueueReceive(frames, &stale, 0) == pdTRUE)
                 queueDrops.fetch_add(1, std::memory_order_relaxed);
             if (xQueueSend(frames, &frame, 0) != pdTRUE)
@@ -60,7 +64,7 @@ void reportTilt() {
 }
 
 void work(void*) {
-    ld::Frame frame;
+    scan::TimedFrame timed;
     unsigned seen = 0;
     for (;;) {
         reportTilt();
@@ -80,12 +84,17 @@ void work(void*) {
                 }
             }
         }
-        if (xQueueReceive(frames, &frame, 1) != pdTRUE) continue;
+        if (xQueueReceive(frames, &timed, 1) != pdTRUE) continue;
+        const auto& frame = timed.lidar;
         if (net.ready()) {
             net.send(frame);
             continue;
         }
-        if (++seen % 3 != 0) continue;
+        if (++seen % 120 == 0) {
+            Serial.printf("# lidar %lld us, lag %lld\n", (long long)timed.endUs,
+                          (long long)(esp_timer_get_time() - timed.endUs));
+        }
+        if (seen % 3 != 0) continue;
         for (size_t i = 0; i < ld::pointCount; ++i) {
             const float theta = ld::angleRad(frame, i);
             const auto point = frame.points[i];
@@ -108,7 +117,7 @@ void setup() {
     if (!gimbal.begin()) Serial.println("# gimbal init failed");
     lidar.setRxBufferSize(2048);
     lidar.begin(cfg::lidarBaud, SERIAL_8N1, cfg::lidarRx, -1);
-    frames = xQueueCreate(16, sizeof(ld::Frame));
+    frames = xQueueCreate(16, sizeof(scan::TimedFrame));
     if (!frames || xTaskCreatePinnedToCore(readLidar, "ld06", 3072, nullptr, 3,
                                            nullptr, 1) != pdPASS ||
         xTaskCreatePinnedToCore(work, "points", 6144, nullptr, 2,
