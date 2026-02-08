@@ -43,25 +43,36 @@ void readLidar(void*) {
     }
 }
 
-void reportTilt() {
-    static uint32_t lastPoll = 0;
-    static uint32_t lastSample = 0;
-    static unsigned reports = 0;
-    const uint32_t now = micros();
-    if (imuOk && now - lastPoll >= 5000) {
-        lastPoll = now;
-        ImuSample sample;
-        if (imu.read(sample)) {
-            const float dt = lastSample ? (now - lastSample) * 1e-6f : 0;
-            lastSample = now;
-            attitude.update(sample, dt);
-            if (++reports % 200 == 0) {
-                Serial.printf("# tilt %.2f %.2f qdrop=%lu\n", attitude.roll(),
-                              attitude.pitch(), (unsigned long)queueDrops.load());
+bool readAttitude(int64_t now) {
+    static int64_t lastPoll = 0;
+    static int64_t lastSample = 0;
+    if (!imuOk || now - lastPoll < 5000) return false;
+    lastPoll = now;
+    ImuSample sample;
+    if (!imu.read(sample)) return false;
+    const float dt = lastSample ? (now - lastSample) * 1e-6f : 0;
+    lastSample = now;
+    attitude.update(sample, dt);
+    return attitude.ready();
+}
+
+void readMag() {
+    static uint32_t lastMag = 0;
+    static uint32_t lastGoodMag = 0;
+    if (magOk && millis() - lastMag >= 20) {
+        lastMag = millis();
+        Vec3 magCounts;
+        if (mag.read(magCounts)) {
+            if (cfg::dumpMag) {
+                Serial.printf("mag,%.0f,%.0f,%.0f\n", magCounts.x,
+                              magCounts.y, magCounts.z);
+            } else if (cfg::magCalibrated) {
+                const float dt = lastGoodMag ? (lastMag - lastGoodMag) * 0.001f : 0;
+                attitude.correctHeading(Mag::corrected(magCounts), dt);
+                lastGoodMag = lastMag;
             }
         }
     }
-
 }
 
 void work(void*) {
@@ -69,23 +80,6 @@ void work(void*) {
     scan::PoseHistory poses;
     unsigned seen = 0;
     for (;;) {
-        reportTilt();
-        static uint32_t lastMag = 0;
-        static uint32_t lastGoodMag = 0;
-        if (magOk && millis() - lastMag >= 20) {
-            lastMag = millis();
-            Vec3 magCounts;
-            if (mag.read(magCounts)) {
-                if (cfg::dumpMag) {
-                    Serial.printf("mag,%.0f,%.0f,%.0f\n", magCounts.x,
-                                  magCounts.y, magCounts.z);
-                } else if (cfg::magCalibrated) {
-                    const float dt = lastGoodMag ? (lastMag - lastGoodMag) * 0.001f : 0;
-                    attitude.correctHeading(Mag::corrected(magCounts), dt);
-                    lastGoodMag = lastMag;
-                }
-            }
-        }
         if (xQueueReceive(frames, &timed, 1) != pdTRUE) continue;
         scan::AxisSample sample;
         while (xQueueReceive(axis, &sample, 0) == pdTRUE) poses.add(sample);
@@ -118,11 +112,31 @@ void work(void*) {
 }
 
 void readAxis(void*) {
+    Quat worldFromBase;
+    int64_t lastBaseUs = 0;
     for (;;) {
         gimbal.tick();
         scan::AxisSample sample{};
         sample.us = esp_timer_get_time();
-        if (gimbal.position(sample.radians)) {
+        const bool haveAxis = gimbal.position(sample.radians);
+        const bool haveAttitude = readAttitude(sample.us);
+        readMag();
+
+        if (cfg::stabilize && haveAxis && haveAttitude) {
+            // the imu is already turning with the head. remove the shaft
+            // before smoothing or the lag makes the ceiling breathe.
+            const Quat baseFromHead = Quat::about({1, 0, 0}, sample.radians);
+            const Quat estimate = attitude.rotation() * baseFromHead.conjugate();
+            const float dt = (sample.us - lastBaseUs) * 1e-6f;
+            worldFromBase = lastBaseUs && dt < 0.05f
+                ? worldFromBase.toward(estimate, dt / (0.18f + dt))
+                : estimate.unit();
+            lastBaseUs = sample.us;
+        }
+
+        const bool fresh = lastBaseUs && sample.us - lastBaseUs < 25000;
+        sample.worldFromBase = worldFromBase;
+        if (haveAxis && (!cfg::stabilize || fresh)) {
             if (xQueueSend(axis, &sample, 0) != pdTRUE) {
                 scan::AxisSample stale;
                 xQueueReceive(axis, &stale, 0);

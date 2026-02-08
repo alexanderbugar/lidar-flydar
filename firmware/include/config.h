@@ -1,6 +1,7 @@
 #pragma once
 
 namespace cfg {
+constexpr bool stabilize = false;
 constexpr bool driveMotor = false;
 constexpr int motorA = 5;
 constexpr int motorB = 6;

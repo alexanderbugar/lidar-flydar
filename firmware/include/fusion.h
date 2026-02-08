@@ -24,6 +24,7 @@ private:
 struct AxisSample {
     int64_t us;
     float radians;
+    Quat worldFromBase;
 };
 
 class PoseHistory {

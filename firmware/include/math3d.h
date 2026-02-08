@@ -34,6 +34,14 @@ struct Quat {
         return {w/norm, x/norm, y/norm, z/norm};
     }
 
+    Quat toward(Quat other, float t) const {
+        // q and -q are the same rotation. don't interpolate the long way.
+        const float dot = w*other.w + x*other.x + y*other.y + z*other.z;
+        const float k = dot < 0 ? -t : t;
+        return Quat{w*(1-t) + k*other.w, x*(1-t) + k*other.x,
+                    y*(1-t) + k*other.y, z*(1-t) + k*other.z}.unit();
+    }
+
     Vec3 rotate(Vec3 v) const {
         const Vec3 axis{x, y, z};
         const Vec3 t = axis.cross(v) * 2;

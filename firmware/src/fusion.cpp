@@ -45,7 +45,8 @@ bool scan::PoseHistory::at(int64_t us, AxisSample& pose) const {
         constexpr float turn = 6.28318530718f;
         const float t = float(us - older.us) / gap;
         const float delta = remainderf(newer.radians - older.radians, turn);
-        pose = {us, remainderf(older.radians + delta*t, turn)};
+        pose = {us, remainderf(older.radians + delta*t, turn),
+                older.worldFromBase.toward(newer.worldFromBase, t)};
         return true;
     }
     return false;
@@ -73,6 +74,7 @@ void scan::project(const TimedFrame& timed, const PoseHistory& poses, CloudFrame
         const Vec3 flat{r*cosf(angle), r*sinf(angle), 0};
         // shaft is in the scan plane. about Z just spins the same flat picture.
         const auto head = Quat::about({1, 0, 0}, axis.radians);
-        out.points[out.count++] = {head.rotate(flat), offset, echo.intensity};
+        const Vec3 xyz = axis.worldFromBase.rotate(head.rotate(flat));
+        out.points[out.count++] = {xyz, offset, echo.intensity};
     }
 }

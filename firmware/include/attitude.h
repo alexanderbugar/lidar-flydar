@@ -8,6 +8,7 @@ public:
     void correctHeading(Vec3 magBody, float dt);
     float roll() const;
     float pitch() const;
+    bool ready() const { return seeded_; }
     Quat rotation() const { return q_; }
 
 private:
