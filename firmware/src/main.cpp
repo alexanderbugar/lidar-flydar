@@ -20,6 +20,7 @@ Attitude attitude;
 Gimbal gimbal;
 bool imuOk = false;
 QueueHandle_t frames = nullptr;
+QueueHandle_t axis = nullptr;
 std::atomic<uint32_t> queueDrops{0};
 
 void readLidar(void*) {
@@ -65,6 +66,7 @@ void reportTilt() {
 
 void work(void*) {
     scan::TimedFrame timed;
+    scan::PoseHistory poses;
     unsigned seen = 0;
     for (;;) {
         reportTilt();
@@ -85,14 +87,17 @@ void work(void*) {
             }
         }
         if (xQueueReceive(frames, &timed, 1) != pdTRUE) continue;
+        scan::AxisSample sample;
+        while (xQueueReceive(axis, &sample, 0) == pdTRUE) poses.add(sample);
         const auto& frame = timed.lidar;
         if (net.ready()) {
             net.send(frame);
             continue;
         }
         if (++seen % 120 == 0) {
-            Serial.printf("# lidar %lld us, lag %lld\n", (long long)timed.endUs,
-                          (long long)(esp_timer_get_time() - timed.endUs));
+            if (poses.at(timed.endUs, sample))
+                Serial.printf("# frame axis %.3f rad at %lld us\n", sample.radians,
+                              (long long)sample.us);
         }
         if (seen % 3 != 0) continue;
         for (size_t i = 0; i < ld::pointCount; ++i) {
@@ -103,6 +108,22 @@ void work(void*) {
                           point.mm * cosf(theta), point.mm * sinf(theta),
                           point.intensity);
         }
+    }
+}
+
+void readAxis(void*) {
+    for (;;) {
+        gimbal.tick();
+        scan::AxisSample sample{};
+        sample.us = esp_timer_get_time();
+        if (gimbal.position(sample.radians)) {
+            if (xQueueSend(axis, &sample, 0) != pdTRUE) {
+                scan::AxisSample stale;
+                xQueueReceive(axis, &stale, 0);
+                xQueueSend(axis, &sample, 0);
+            }
+        }
+        vTaskDelay(1);
     }
 }
 
@@ -118,21 +139,17 @@ void setup() {
     lidar.setRxBufferSize(2048);
     lidar.begin(cfg::lidarBaud, SERIAL_8N1, cfg::lidarRx, -1);
     frames = xQueueCreate(16, sizeof(scan::TimedFrame));
-    if (!frames || xTaskCreatePinnedToCore(readLidar, "ld06", 3072, nullptr, 3,
+    axis = xQueueCreate(48, sizeof(scan::AxisSample));
+    if (!frames || !axis || xTaskCreatePinnedToCore(readLidar, "ld06", 3072, nullptr, 3,
                                            nullptr, 1) != pdPASS ||
         xTaskCreatePinnedToCore(work, "points", 6144, nullptr, 2,
+                                nullptr, 0) != pdPASS ||
+        xTaskCreatePinnedToCore(readAxis, "axis", 4096, nullptr, 3,
                                 nullptr, 0) != pdPASS) {
         Serial.println("# could not start tasks");
     }
 }
 
 void loop() {
-    gimbal.tick();
-    static unsigned long last = 0;
-    if (millis() - last >= 1000) {
-        last = millis();
-        float angle;
-        if (gimbal.position(angle)) Serial.printf("# axis %.3f rad\n", angle);
-    }
-    delay(1);
+    delay(1000);
 }

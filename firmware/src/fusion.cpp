@@ -2,6 +2,7 @@
 #include "config.h"
 #include <algorithm>
 #include <cstdlib>
+#include <cmath>
 
 int64_t scan::FrameClock::observe(uint16_t stampMs, int64_t receivedUs) {
     constexpr int64_t wireUs = (ld::frameBytes * 10000000LL + cfg::lidarBaud - 1)
@@ -22,4 +23,30 @@ int64_t scan::FrameClock::observe(uint16_t stampMs, int64_t receivedUs) {
     lastStamp_ = stampMs;
     lastRxUs_ = receivedUs;
     return offsetUs_ + sensorUs_;
+}
+
+void scan::PoseHistory::add(AxisSample pose) {
+    if (poses_.size() && pose.us <= poses_.newest().us) return;
+    poses_.push(pose);
+}
+
+bool scan::PoseHistory::at(int64_t us, AxisSample& pose) const {
+    if (!poses_.size() || us > poses_.newest().us) return false;
+    for (size_t i = 0; i < poses_.size(); ++i) {
+        const auto& older = poses_.newest(i);
+        if (older.us == us) {
+            pose = older;
+            return true;
+        }
+        if (older.us > us) continue;
+        const auto& newer = poses_.newest(i - 1);
+        const auto gap = newer.us - older.us;
+        if (gap > 12000) return false;
+        constexpr float turn = 6.28318530718f;
+        const float t = float(us - older.us) / gap;
+        const float delta = remainderf(newer.radians - older.radians, turn);
+        pose = {us, remainderf(older.radians + delta*t, turn)};
+        return true;
+    }
+    return false;
 }
