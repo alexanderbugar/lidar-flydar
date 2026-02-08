@@ -2,3 +2,4 @@ matplotlib
 pyqtgraph
 PyQt6
 numpy
+PyOpenGL

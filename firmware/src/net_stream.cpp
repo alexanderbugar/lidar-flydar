@@ -20,17 +20,21 @@ bool NetStream::ready() const {
     return WiFi.status() == WL_CONNECTED;
 }
 
-void NetStream::send(const ld::Frame& frame) {
-    PolarPacket packet{};
-    packet.sequence = sequence_++;
-    packet.stampMs = frame.stampMs;
-    for (size_t i = 0; i < ld::pointCount; ++i) {
-        const float cdeg = ld::angleRad(frame, i) * (18000.0f / PI);
-        packet.points[i] = {uint16_t(unsigned(cdeg + 0.5f) % 36000u), frame.points[i].mm,
-                            frame.points[i].intensity};
+void NetStream::send(const scan::CloudFrame& frame, uint32_t queueDrops) {
+    // FLY1. this is a rolling cloud, one lidar frame per datagram.
+    WireCloud packet{};
+    packet.header = {0x31594c46, sequence_++, uint64_t(frame.startUs),
+                     queueDrops + sendDrops_, uint16_t(frame.count)};
+    for (size_t i = 0; i < frame.count; ++i) {
+        const auto& p = frame.points[i];
+        packet.points[i] = {p.metres.x, p.metres.y, p.metres.z, p.offsetUs, p.intensity};
     }
     const auto* bytes = reinterpret_cast<const uint8_t*>(&packet);
-    if (!udp_.beginPacket(cfg::udpHost, cfg::udpPort)) return;
-    udp_.write(bytes, sizeof(packet));
-    udp_.endPacket();
+    const size_t size = sizeof(CloudHeader) + frame.count * sizeof(WirePoint);
+    if (!udp_.beginPacket(cfg::udpHost, cfg::udpPort)) {
+        ++sendDrops_;
+        return;
+    }
+    const size_t written = udp_.write(bytes, size);
+    if (!udp_.endPacket() || written != size) ++sendDrops_;
 }

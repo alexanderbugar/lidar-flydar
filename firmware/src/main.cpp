@@ -90,8 +90,10 @@ void work(void*) {
         scan::AxisSample sample;
         while (xQueueReceive(axis, &sample, 0) == pdTRUE) poses.add(sample);
         const auto& frame = timed.lidar;
+        scan::CloudFrame cloud{};
+        scan::project(timed, poses, cloud);
         if (net.ready()) {
-            net.send(frame);
+            if (cloud.count) net.send(cloud, queueDrops.load());
             continue;
         }
         if (++seen % 120 == 0) {
@@ -99,8 +101,6 @@ void work(void*) {
                 Serial.printf("# frame axis %.3f rad at %lld us\n", sample.radians,
                               (long long)sample.us);
         }
-        scan::CloudFrame cloud{};
-        scan::project(timed, poses, cloud);
         if (seen % 120 == 0 && cloud.count) {
             const auto p = cloud.points[0].metres;
             Serial.printf("# xyz %.3f %.3f %.3f\n", p.x, p.y, p.z);
