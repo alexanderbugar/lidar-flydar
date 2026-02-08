@@ -11,3 +11,6 @@ and `#define WIFI_PASSWORD "…"` in firmware/include/wifi_local.h.
 
 viewer: install tools/requirements.txt and run `python tools/viewer.py`.
 the serial plot is still useful when the laptop is on the wrong wifi.
+
+feb: the viewer is xyz now. set axis zero first. leave stabilization off
+on the desk. it turns slow enough that a sweep takes a few seconds.

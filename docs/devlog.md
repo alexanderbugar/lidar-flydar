@@ -15,3 +15,10 @@ took the ring apart instead of studying. the inside is unhelpful.
 encoder stopped responding when i put the lid on. the magnet was rubbing
 on the sensor board. shimmed it with a washer. driver stays off when the
 encoder drops out now. have to power cycle after that which is fine.
+
+### 2026-02-08
+
+first sphere-ish sweep on the desk. half a shaft turn is enough in
+theory, but slow rotation leaves the wall with fewer stripes. put the
+mount low enough to see the ceiling. desk legs are still mostly holes.
+held the base in my hand and made two ceilings. more on that later.

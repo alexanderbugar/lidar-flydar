@@ -35,3 +35,9 @@ zero the axis with the scan plane flat. read `# axis` with sign +1 and
 zero 0 first, then put that number in `axisZeroRad`. increasing angle
 should tilt +Y toward +Z looking along the right-handed X axis.
 flip `axisSign` if it goes the other way.
+
++X is the shaft, +Z is up when the scan plate is level, +Y finishes the
+right-handed frame. align the imu and qmc to those marks on the plate,
+with the lidar start ray pointing toward +X. if your lidar reports angles
+clockwise from that ray as seen from +Z, set the angle sign accordingly
+before using the imu. the stock desk setup only uses the encoder.
