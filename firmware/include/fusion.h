@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ld_lidar.h"
+#include "math3d.h"
 #include "ring_buffer.h"
 
 namespace scan {
@@ -33,4 +34,18 @@ public:
 private:
     RingBuffer<AxisSample, 128> poses_;
 };
+
+struct Point {
+    Vec3 metres;
+    uint16_t offsetUs;
+    uint8_t intensity;
+};
+
+struct CloudFrame {
+    int64_t startUs;
+    size_t count;
+    Point points[ld::pointCount];
+};
+
+void project(const TimedFrame& frame, const PoseHistory& poses, CloudFrame& out);
 }

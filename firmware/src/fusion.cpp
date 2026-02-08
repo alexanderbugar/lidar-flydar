@@ -50,3 +50,29 @@ bool scan::PoseHistory::at(int64_t us, AxisSample& pose) const {
     }
     return false;
 }
+
+void scan::project(const TimedFrame& timed, const PoseHistory& poses, CloudFrame& out) {
+    const auto& frame = timed.lidar;
+    out.count = 0;
+    if (!frame.speedDps) return;
+
+    const unsigned span = (36000u + frame.endCdeg - frame.startCdeg) % 36000u;
+    const unsigned durationUs = span * 10000u / frame.speedDps;
+    if (durationUs > 25000) return;  // more than this and the timing is already toast
+    out.startUs = timed.endUs - durationUs;
+    if (out.startUs < 0) return;
+    for (size_t i = 0; i < ld::pointCount; ++i) {
+        const auto echo = frame.points[i];
+        if (!echo.mm) continue;
+        const auto offset = uint16_t(durationUs * i / (ld::pointCount - 1));
+        AxisSample axis;
+        if (!poses.at(out.startUs + offset, axis)) continue;
+
+        const float angle = ld::angleRad(frame, i);
+        const float r = echo.mm * 0.001f;
+        const Vec3 flat{r*cosf(angle), r*sinf(angle), 0};
+        // shaft is in the scan plane. about Z just spins the same flat picture.
+        const auto head = Quat::about({1, 0, 0}, axis.radians);
+        out.points[out.count++] = {head.rotate(flat), offset, echo.intensity};
+    }
+}

@@ -99,6 +99,12 @@ void work(void*) {
                 Serial.printf("# frame axis %.3f rad at %lld us\n", sample.radians,
                               (long long)sample.us);
         }
+        scan::CloudFrame cloud{};
+        scan::project(timed, poses, cloud);
+        if (seen % 120 == 0 && cloud.count) {
+            const auto p = cloud.points[0].metres;
+            Serial.printf("# xyz %.3f %.3f %.3f\n", p.x, p.y, p.z);
+        }
         if (seen % 3 != 0) continue;
         for (size_t i = 0; i < ld::pointCount; ++i) {
             const float theta = ld::angleRad(frame, i);
