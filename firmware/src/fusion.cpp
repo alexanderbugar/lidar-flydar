@@ -69,7 +69,7 @@ void scan::project(const TimedFrame& timed, const PoseHistory& poses, CloudFrame
         AxisSample axis;
         if (!poses.at(out.startUs + offset, axis)) continue;
 
-        const float angle = ld::angleRad(frame, i);
+        const float angle = cfg::lidarAngleSign * ld::angleRad(frame, i);
         const float r = echo.mm * 0.001f;
         const Vec3 flat{r*cosf(angle), r*sinf(angle), 0};
         // shaft is in the scan plane. about Z just spins the same flat picture.

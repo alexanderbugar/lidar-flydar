@@ -79,10 +79,17 @@ void work(void*) {
     scan::TimedFrame timed;
     scan::PoseHistory poses;
     unsigned seen = 0;
+    uint32_t lastAxisReport = 0;
     for (;;) {
         if (xQueueReceive(frames, &timed, 1) != pdTRUE) continue;
         scan::AxisSample sample;
-        while (xQueueReceive(axis, &sample, 0) == pdTRUE) poses.add(sample);
+        while (xQueueReceive(axis, &sample, 0) == pdTRUE) {
+            poses.add(sample);
+            if (millis() - lastAxisReport >= 1000) {
+                lastAxisReport = millis();
+                Serial.printf("# axis %.3f rad\n", sample.radians);
+            }
+        }
         const auto& frame = timed.lidar;
         scan::CloudFrame cloud{};
         scan::project(timed, poses, cloud);
@@ -99,7 +106,7 @@ void work(void*) {
             const auto p = cloud.points[0].metres;
             Serial.printf("# xyz %.3f %.3f %.3f\n", p.x, p.y, p.z);
         }
-        if (seen % 3 != 0) continue;
+        if (!cfg::serialPolar || seen % 3 != 0) continue;
         for (size_t i = 0; i < ld::pointCount; ++i) {
             const float theta = ld::angleRad(frame, i);
             const auto point = frame.points[i];

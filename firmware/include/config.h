@@ -33,5 +33,8 @@ constexpr float magMatrix[3][3] = {
 };
 constexpr unsigned char magAddress = 0x0d;
 constexpr int lidarRx = 18;
+// +1 for counterclockwise azimuth viewed from the head's +Z.
+constexpr float lidarAngleSign = -1.0f;
+constexpr bool serialPolar = false;
 constexpr unsigned lidarBaud = 230400;
 }
