@@ -4,3 +4,5 @@
 __pycache__/
 .DS_Store
 firmware/include/wifi_local.h
+*.fdl
+*.ply
