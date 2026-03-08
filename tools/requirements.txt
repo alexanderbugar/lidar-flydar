@@ -1,5 +1,3 @@
-matplotlib
-pyqtgraph
-PyQt6
 numpy
-PyOpenGL
+matplotlib
+open3d
