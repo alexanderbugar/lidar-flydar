@@ -29,9 +29,10 @@ public:
 
     void reset();
     uint32_t badCrc() const { return badCrc_; }
+    uint32_t badFields() const { return badFields_; }
 
 private:
-    uint32_t badCrc_ = 0;
+    uint32_t badCrc_ = 0, badFields_ = 0;
     enum class State { Header, Length, Body };
     State state_ = State::Header;
     uint8_t bytes_[frameBytes] = {};

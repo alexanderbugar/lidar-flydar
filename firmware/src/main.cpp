@@ -22,6 +22,17 @@ bool imuOk = false;
 QueueHandle_t frames = nullptr;
 QueueHandle_t axis = nullptr;
 std::atomic<uint32_t> queueDrops{0};
+std::atomic<uint32_t> uartErrors{0};
+std::atomic<uint32_t> uartOverflow{0};
+std::atomic<uint32_t> crcErrors{0};
+std::atomic<uint32_t> fieldErrors{0};
+
+void uartError(hardwareSerial_error_t error) {
+    if (error == UART_FIFO_OVF_ERROR || error == UART_BUFFER_FULL_ERROR)
+        uartOverflow.fetch_add(1, std::memory_order_relaxed);
+    else
+        uartErrors.fetch_add(1, std::memory_order_relaxed);
+}
 
 void readLidar(void*) {
     scan::TimedFrame frame;
@@ -39,6 +50,8 @@ void readLidar(void*) {
             if (xQueueSend(frames, &frame, 0) != pdTRUE)
                 queueDrops.fetch_add(1, std::memory_order_relaxed);
         }
+        crcErrors.store(parser.badCrc(), std::memory_order_relaxed);
+        fieldErrors.store(parser.badFields(), std::memory_order_relaxed);
         vTaskDelay(1);
     }
 }
@@ -88,6 +101,10 @@ void work(void*) {
             if (millis() - lastAxisReport >= 1000) {
                 lastAxisReport = millis();
                 Serial.printf("# axis %.3f rad\n", sample.radians);
+                Serial.printf("# rx crc=%u fields=%u uart=%u ovf=%u qdrop=%u\n",
+                              unsigned(crcErrors.load()), unsigned(fieldErrors.load()),
+                              unsigned(uartErrors.load()), unsigned(uartOverflow.load()),
+                              unsigned(queueDrops.load()));
             }
         }
         const auto& frame = timed.lidar;
@@ -165,6 +182,7 @@ void setup() {
     if (!gimbal.begin()) Serial.println("# gimbal init failed");
     lidar.setRxBufferSize(2048);
     lidar.begin(cfg::lidarBaud, SERIAL_8N1, cfg::lidarRx, -1);
+    lidar.onReceiveError(uartError);
     frames = xQueueCreate(16, sizeof(scan::TimedFrame));
     axis = xQueueCreate(48, sizeof(scan::AxisSample));
     if (!frames || !axis || xTaskCreatePinnedToCore(readLidar, "ld06", 3072, nullptr, 3,
