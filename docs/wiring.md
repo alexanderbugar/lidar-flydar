@@ -41,3 +41,9 @@ right-handed frame. align the imu and qmc to those marks on the plate,
 with the lidar start ray pointing toward +X. if your lidar reports angles
 clockwise from that ray as seen from +Z, set the angle sign accordingly
 before using the imu. the stock desk setup only uses the encoder.
+
+if crc climbs with the shaft moving, check the ground and signal
+conductors end to end with the power off. for a live test, bridge the
+ring with short leads while the head is parked. a rising `ovf` is the
+esp dropping bytes and not necessarily a bad ring.
+shorten the ground return before blaming the baud rate.
