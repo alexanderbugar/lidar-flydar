@@ -3,6 +3,7 @@
 #include "config.h"
 
 namespace {
+constexpr float radiansPerDegree = 0.01745329252f;
 int16_t word(const uint8_t* p) {
     return int16_t((uint16_t(p[0]) << 8) | p[1]);
 }
@@ -41,7 +42,7 @@ bool Imu::readRaw(ImuSample& out) {
     uint8_t raw[14];
     if (!readRegs(0x3b, raw, sizeof(raw))) return false;
     out.accelG = axes(raw, 1.0f / 16384.0f);
-    out.gyroRad = axes(raw + 8, 0.01745329252f / 131.0f);
+    out.gyroRad = axes(raw + 8, radiansPerDegree / 131.0f);
     return true;
 }
 
