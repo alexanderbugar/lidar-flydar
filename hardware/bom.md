@@ -7,7 +7,7 @@
 | 2804 gimbal bldc | mine is seven pole pairs, count yours |
 | simplefoc mini v1.1 | drv8313, 12 v motor side |
 | hollow-shaft slip ring | need five conductors, count continuity before soldering |
-| mpu6050 breakout | on the head |
+| icm-42688-p breakout | on the head, replaced the mpu6050 |
 | qmc5883l breakout | also on the head, away from the motor if possble |
 | as5600 and diametric magnet | encoder on base, magnet on shaft |
 | 12 v brick and 5 v buck | common ground, logic on its own branch |
