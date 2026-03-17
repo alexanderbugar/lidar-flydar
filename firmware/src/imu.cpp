@@ -3,6 +3,7 @@
 #include "config.h"
 
 namespace {
+constexpr float radiansPerDegree = 0.01745329252f;
 int16_t word(const uint8_t* p) {
     return int16_t((uint16_t(p[0]) << 8) | p[1]);
 }
@@ -28,6 +29,7 @@ bool Imu::readRegs(uint8_t reg, uint8_t* out, size_t count) {
     return true;
 }
 
+#ifdef FLYDAR_MPU6050
 bool Imu::begin() {
     uint8_t id = 0;
     if (!readRegs(0x75, &id, 1) || id != 0x68) return false;
@@ -41,9 +43,32 @@ bool Imu::readRaw(ImuSample& out) {
     uint8_t raw[14];
     if (!readRegs(0x3b, raw, sizeof(raw))) return false;
     out.accelG = axes(raw, 1.0f / 16384.0f);
-    out.gyroRad = axes(raw + 8, 0.01745329252f / 131.0f);
+    out.gyroRad = axes(raw + 8, radiansPerDegree / 131.0f);
     return true;
 }
+
+#else
+bool Imu::begin() {
+    uint8_t id = 0;
+    if (!readRegs(0x75, &id, 1) || id != 0x47) return false;
+    if (!writeReg(0x11, 0x01)) return false;
+    delay(10);
+    // bank 0 after reset: +/-500 dps and +/-2 g, both 200 Hz.
+    if (!writeReg(0x4f, 0x47) || !writeReg(0x50, 0x67)) return false;
+    if (!writeReg(0x4e, 0x0f)) return false;
+    delay(55);  // gyro startup, direct reads, no fifo.
+    return true;
+}
+
+bool Imu::readRaw(ImuSample& out) {
+    uint8_t raw[12];
+    // accel and gyro are adjacent on this one. no temp word in between.
+    if (!readRegs(0x1f, raw, sizeof(raw))) return false;
+    out.accelG = axes(raw, 1.0f / 16384.0f);
+    out.gyroRad = axes(raw + 6, radiansPerDegree / 65.5f);
+    return true;
+}
+#endif
 
 bool Imu::read(ImuSample& out) {
     if (!readRaw(out)) return false;
