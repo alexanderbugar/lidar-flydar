@@ -22,3 +22,9 @@ first sphere-ish sweep on the desk. half a shaft turn is enough in
 theory, but slow rotation leaves the wall with fewer stripes. put the
 mount low enough to see the ceiling. desk legs are still mostly holes.
 held the base in my hand and made two ceilings. more on that later.
+
+### 2026-03-22
+
+barely shifts on the bench with the icm. carrying it to the other side
+of the room still puts the chair in two places. yaw wobbles near the
+motor too. two separate problems, both pretty visible in the ply.

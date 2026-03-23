@@ -47,3 +47,7 @@ conductors end to end with the power off. for a live test, bridge the
 ring with short leads while the head is parked. a rising `ovf` is the
 esp dropping bytes and not necessarily a bad ring.
 shorten the ground return before blaming the baud rate.
+
+icm-42688-p replaces the mpu on the same head wires. AD0 low gives
+0x68, CS pulled high for I2C. both breakouts use 3.3V. build the
+`s3_mpu` env for the old board. don't plug both into the same bus.
