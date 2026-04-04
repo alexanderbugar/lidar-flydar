@@ -12,6 +12,7 @@ def main():
     cli.add_argument("fixed")
     cli.add_argument("--voxel", type=float, default=0.035)
     cli.add_argument("--match", type=float, default=0.14)
+    cli.add_argument("--plane", action="store_true")
     args = cli.parse_args()
     if not all(math.isfinite(n) and n > 0 for n in (args.voxel, args.match)):
         cli.error("voxel and match distances must be positive")
@@ -22,9 +23,15 @@ def main():
         cli.error("each cloud needs at least 20 points after downsampling")
     moving, fixed = clouds
     icp = o3d.pipelines.registration
+    metric = icp.TransformationEstimationPointToPoint()
+    if args.plane:
+        fixed.estimate_normals(
+            o3d.geometry.KDTreeSearchParamHybrid(radius=3*args.voxel, max_nn=30)
+        )
+        metric = icp.TransformationEstimationPointToPlane()
     result = icp.registration_icp(
         moving, fixed, args.match, np.eye(4),
-        icp.TransformationEstimationPointToPoint(),
+        metric,
         icp.ICPConvergenceCriteria(max_iteration=70),
     )
     print(result.transformation)
