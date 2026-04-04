@@ -28,3 +28,10 @@ held the base in my hand and made two ceilings. more on that later.
 barely shifts on the bench with the icm. carrying it to the other side
 of the room still puts the chair in two places. yaw wobbles near the
 motor too. two separate problems, both pretty visible in the ply.
+
+### 2026-04-04
+
+there is an icp-try branch. two static scans with overlap mostly line up
+if they're already close. during one sweep every wedge gets a different
+error, so a single rigid transform just slides the mess around.
+leaving that branch here.
