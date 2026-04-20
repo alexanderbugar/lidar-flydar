@@ -14,3 +14,7 @@ the serial plot is still useful when the laptop is on the wrong wifi.
 
 feb: the viewer is xyz now. set axis zero first. leave stabilization off
 on the desk. it turns slow enough that a sweep takes a few seconds.
+
+ota: add `#define OTA_PASSWORD "your local password"` to wifi_local.h.
+once that build is on the board over usb, use `pio run -e s3_ota -t upload`
+with `FLYDAR_OTA_PASSWORD` set. ota only runs with driveMotor off.

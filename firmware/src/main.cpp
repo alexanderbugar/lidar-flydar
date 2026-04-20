@@ -9,6 +9,7 @@
 #include "mag.h"
 #include "gimbal.h"
 #include "fusion.h"
+#include "ota.h"
 
 HardwareSerial lidar(1);
 ld::Parser parser;
@@ -196,5 +197,6 @@ void setup() {
 }
 
 void loop() {
-    delay(1000);
+    ota::poll();
+    delay(10);
 }
