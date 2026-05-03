@@ -192,6 +192,7 @@ void setup() {
                                 nullptr, 0) != pdPASS ||
         xTaskCreatePinnedToCore(readAxis, "axis", 4096, nullptr, 3,
                                 nullptr, 0) != pdPASS) {
+        gimbal.stop();
         Serial.println("# could not start tasks");
     }
 }

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "gimbal.h"
 #include "config.h"
 
@@ -32,12 +33,13 @@ bool Gimbal::begin() {
     encoderOk_ = busOk && encoder_.begin();
     if (!cfg::driveMotor || !encoderOk_) return encoderOk_;
     driver_.voltage_power_supply = cfg::motorSupply;
+    delay(cfg::motorSettleMs);
     if (!driver_.init()) return false;
     motor_.linkDriver(&driver_);
     motor_.linkSensor(&encoder_);
     motor_.controller = MotionControlType::velocity;
     motor_.torque_controller = TorqueControlType::voltage;
-    motor_.voltage_sensor_align = 1.0f;
+    motor_.voltage_sensor_align = cfg::motorAlignVoltage;
     motor_.PID_velocity.P = 0.32f;
     motor_.PID_velocity.I = 1.2f;
     motor_.LPF_velocity.Tf = 0.035f;
@@ -57,11 +59,15 @@ void Gimbal::tick() {
 
     motor_.loopFOC();
     if (!encoder_.valid()) {
-        motor_.disable();
-        running_ = false;
+        stop();
         return;
     }
-    motor_.move(cfg::motorSpeedRad);
+    const uint32_t now = micros();
+    const float dt = lastTickUs_ ? std::min(now - lastTickUs_, uint32_t(10000))*1e-6f : 0;
+    lastTickUs_ = now;
+    const float step = cfg::motorRampRadPerSec2 * dt;
+    target_ += std::max(-step, std::min(step, cfg::motorSpeedRad - target_));
+    motor_.move(target_);
 }
 
 bool Gimbal::position(float& radians) {
@@ -69,4 +75,11 @@ bool Gimbal::position(float& radians) {
     radians = remainderf(cfg::axisSign * (encoder_.getMechanicalAngle() -
                                            cfg::axisZeroRad), 2.0f*PI);
     return true;
+}
+
+void Gimbal::stop() {
+    if (running_) motor_.disable();
+    running_ = false;
+    target_ = 0;
+    lastTickUs_ = 0;
 }

@@ -19,6 +19,7 @@ public:
     Gimbal();
     bool begin();
     void tick();
+    void stop();
     bool position(float& radians);
 
 private:
@@ -27,4 +28,6 @@ private:
     BLDCMotor motor_;
     bool encoderOk_ = false;
     bool running_ = false;
+    uint32_t lastTickUs_ = 0;
+    float target_ = 0;
 };

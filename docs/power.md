@@ -26,3 +26,9 @@ usb for flashing: unplug the buck feed to the devkit before attaching
 the usb cable, or use a data-only power-isolated setup. the head still
 needs 5 V if you want data. the mini's onboard 3.3 V isn't for powering
 the head.
+
+the firmware waits 600 ms before alignment and takes just under two
+seconds to ramp to 0.75 rad/s after it. the align voltage still has to
+move the rotor. if it doesn't, check the phases and pole pairs before
+turning the voltage up. add a 10k pull-down at EN if your driver board
+doesn't already have one.
