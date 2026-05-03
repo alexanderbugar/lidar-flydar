@@ -91,23 +91,24 @@ void readMag() {
 
 void work(void*) {
     scan::TimedFrame timed;
-    scan::PoseHistory poses;
+    static scan::PoseHistory poses;
     unsigned seen = 0;
-    uint32_t lastAxisReport = 0;
+    uint32_t lastReport = 0;
     for (;;) {
-        if (xQueueReceive(frames, &timed, 1) != pdTRUE) continue;
+        const bool haveFrame = xQueueReceive(frames, &timed, 1) == pdTRUE;
         scan::AxisSample sample;
-        while (xQueueReceive(axis, &sample, 0) == pdTRUE) {
-            poses.add(sample);
-            if (millis() - lastAxisReport >= 1000) {
-                lastAxisReport = millis();
+        while (xQueueReceive(axis, &sample, 0) == pdTRUE) poses.add(sample);
+
+        if (millis() - lastReport >= 1000) {
+            lastReport = millis();
+            if (poses.at(esp_timer_get_time() - 5000, sample))
                 Serial.printf("# axis %.3f rad\n", sample.radians);
-                Serial.printf("# rx crc=%u fields=%u uart=%u ovf=%u qdrop=%u\n",
-                              unsigned(crcErrors.load()), unsigned(fieldErrors.load()),
-                              unsigned(uartErrors.load()), unsigned(uartOverflow.load()),
-                              unsigned(queueDrops.load()));
-            }
+            Serial.printf("# rx crc=%u fields=%u uart=%u ovf=%u qdrop=%u\n",
+                          unsigned(crcErrors.load()), unsigned(fieldErrors.load()),
+                          unsigned(uartErrors.load()), unsigned(uartOverflow.load()),
+                          unsigned(queueDrops.load()));
         }
+        if (!haveFrame) continue;
         const auto& frame = timed.lidar;
         scan::CloudFrame cloud{};
         scan::project(timed, poses, cloud);
