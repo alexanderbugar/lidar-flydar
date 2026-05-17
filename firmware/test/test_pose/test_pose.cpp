@@ -54,9 +54,9 @@ void projection_uses_time_and_both_rotations() {
     timed.lidar.points[0] = {1000, 44};
 
     scan::PoseHistory poses;
-    const auto base = Quat::about({0, 0, 1}, halfTurn/2);
-    poses.add({1000, 0, base});
-    poses.add({3000, halfTurn, base});
+    const auto base = Quat::about({0, 1, 0}, halfTurn/2);
+    poses.add({1000, 0.2f, base});
+    poses.add({3000, halfTurn - 0.2f, base});
 
     scan::CloudFrame out{};
     scan::project(timed, poses, out);
@@ -64,7 +64,7 @@ void projection_uses_time_and_both_rotations() {
     TEST_ASSERT_EQUAL_UINT(2000, unsigned(out.startUs));
     TEST_ASSERT_EQUAL_UINT16(0, out.points[0].offsetUs);
     TEST_ASSERT_EQUAL_UINT8(44, out.points[0].intensity);
-    closeTo({0, 0, 1}, out.points[0].metres);
+    closeTo({1, 0, 0}, out.points[0].metres);
 }
 }
 
