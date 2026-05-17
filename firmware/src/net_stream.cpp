@@ -13,17 +13,19 @@
 void NetStream::begin() {
     if (!WIFI_SSID[0]) return;
     WiFi.mode(WIFI_STA);
+    WiFi.setAutoReconnect(true);
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 }
 
-bool NetStream::ready() const {
-    return WiFi.status() == WL_CONNECTED;
-}
-
 void NetStream::send(const scan::CloudFrame& frame, uint32_t queueDrops) {
+    const uint32_t sequence = sequence_++;
+    if (WiFi.status() != WL_CONNECTED) {
+        ++sendDrops_;
+        return;
+    }
     // FLY1. this is a rolling cloud, one lidar frame per datagram.
     WireCloud packet{};
-    packet.header = {0x31594c46, sequence_++, uint64_t(frame.startUs),
+    packet.header = {0x31594c46, sequence, uint64_t(frame.startUs),
                      queueDrops + sendDrops_, uint16_t(frame.count)};
     for (size_t i = 0; i < frame.count; ++i) {
         const auto& p = frame.points[i];

@@ -112,10 +112,7 @@ void work(void*) {
         const auto& frame = timed.lidar;
         scan::CloudFrame cloud{};
         scan::project(timed, poses, cloud);
-        if (net.ready()) {
-            if (cloud.count) net.send(cloud, queueDrops.load());
-            continue;
-        }
+        if (cloud.count) net.send(cloud, queueDrops.load());
         if (++seen % 120 == 0) {
             if (poses.at(timed.endUs, sample))
                 Serial.printf("# frame axis %.3f rad at %lld us\n", sample.radians,

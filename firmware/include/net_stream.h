@@ -29,7 +29,7 @@ class NetStream {
 public:
     void begin();
     void send(const scan::CloudFrame& frame, uint32_t queueDrops);
-    bool ready() const;
+
 
 private:
     WiFiUDP udp_;
