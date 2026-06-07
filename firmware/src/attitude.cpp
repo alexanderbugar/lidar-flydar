@@ -1,15 +1,5 @@
 #include "attitude.h"
-#include <algorithm>
 #include <cmath>
-
-float Attitude::roll() const {
-    return atan2f(2*(q_.w*q_.x + q_.y*q_.z), 1 - 2*(q_.x*q_.x + q_.y*q_.y));
-}
-
-float Attitude::pitch() const {
-    const float s = 2*(q_.w*q_.y - q_.z*q_.x);
-    return asinf(std::max(-1.0f, std::min(1.0f, s)));
-}
 
 void Attitude::update(const ImuSample& sample, float dt) {
     const Vec3 a = sample.accelG;

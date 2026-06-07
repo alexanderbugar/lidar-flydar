@@ -58,6 +58,7 @@ void readLidar(void*) {
 }
 
 bool readAttitude(int64_t now) {
+    if (!cfg::stabilize) return false;
     static int64_t lastPoll = 0;
     static int64_t lastSample = 0;
     if (!imuOk || now - lastPoll < 5000) return false;
@@ -71,6 +72,7 @@ bool readAttitude(int64_t now) {
 }
 
 void readMag() {
+    if (!cfg::dumpMag && !(cfg::stabilize && cfg::magCalibrated)) return;
     static uint32_t lastMag = 0;
     static uint32_t lastGoodMag = 0;
     if (magOk && millis() - lastMag >= 20) {
@@ -173,11 +175,15 @@ void readAxis(void*) {
 void setup() {
     net.begin();
     Serial.begin(921600);
-    Wire.begin(cfg::headSda, cfg::headScl, cfg::headI2cHz);
-    Wire.setTimeOut(4);
-    magOk = mag.begin();
-    imuOk = imu.begin() && imu.calibrate();
-    if (!imuOk) Serial.println("# imu missing or moving at boot");
+    if (cfg::stabilize || cfg::dumpMag) {
+        Wire.begin(cfg::headSda, cfg::headScl, cfg::headI2cHz);
+        Wire.setTimeOut(4);
+        if (cfg::dumpMag || cfg::magCalibrated) magOk = mag.begin();
+        if (cfg::stabilize) {
+            imuOk = imu.begin() && imu.calibrate();
+            if (!imuOk) Serial.println("# imu missing or moving at boot");
+        }
+    }
     if (!gimbal.begin()) Serial.println("# gimbal init failed");
     lidar.setRxBufferSize(2048);
     lidar.begin(cfg::lidarBaud, SERIAL_8N1, cfg::lidarRx, -1);
