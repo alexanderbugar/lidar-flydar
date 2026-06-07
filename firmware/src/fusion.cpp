@@ -7,7 +7,7 @@
 int64_t scan::FrameClock::observe(uint16_t stampMs, int64_t receivedUs) {
     constexpr int64_t wireUs = (ld::frameBytes * 10000000LL + cfg::lidarBaud - 1)
                               / cfg::lidarBaud;
-    constexpr int wrapMs = 30000;
+    constexpr int wrapMs = ld::stampWrapMs;
     const int deltaMs = (stampMs + wrapMs - lastStamp_) % wrapMs;
     const int64_t arrivalUs = receivedUs - wireUs;
     const int64_t gapUs = receivedUs - lastRxUs_;
@@ -57,8 +57,7 @@ void scan::project(const TimedFrame& timed, const PoseHistory& poses, CloudFrame
     out.count = 0;
     if (!frame.speedDps) return;
 
-    const unsigned span = (36000u + frame.endCdeg - frame.startCdeg) % 36000u;
-    const unsigned durationUs = span * 10000u / frame.speedDps;
+    const unsigned durationUs = ld::spanCdeg(frame) * 10000u / frame.speedDps;
     if (durationUs > 25000) return;  // more than this and the timing is already toast
     out.startUs = timed.endUs - durationUs;
     if (out.startUs < 0) return;

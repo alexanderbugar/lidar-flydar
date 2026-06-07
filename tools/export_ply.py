@@ -25,7 +25,7 @@ def downsample(points, size):
     cells = np.floor(data[:, :3] / size).astype(np.int64)
     _, bucket, count = np.unique(cells, axis=0, return_inverse=True, return_counts=True)
     average = np.column_stack([
-        np.bincount(bucket, weights=data[:, col]) / count
+        np.bincount(bucket.reshape(-1), weights=data[:, col]) / count
         for col in range(4)
     ])
     return [(x, y, z, round(strength)) for x, y, z, strength in average]

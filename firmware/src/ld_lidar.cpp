@@ -26,17 +26,22 @@ constexpr uint8_t crcTable[] = {
     0xf4, 0xb9, 0x6e, 0x23, 0x8d, 0xc0, 0x17, 0x5a, 0x06, 0x4b, 0x9c, 0xd1, 0x7f, 0x32, 0xe5, 0xa8,
 };
 
+static_assert(sizeof(crcTable) == 256, "missing crc table entries");
+
 uint16_t word(const uint8_t* p) {
     return uint16_t(p[0]) | (uint16_t(p[1]) << 8);
 }
 }
 
+unsigned spanCdeg(const Frame& frame) {
+    return (turnCdeg + frame.endCdeg - frame.startCdeg) % turnCdeg;
+}
+
 float angleRad(const Frame& frame, size_t point) {
     // the angles on the wire are centidegrees. lost most of tuesday to that.
     const float fraction = float(point) / (pointCount - 1);
-    const unsigned span = (36000u + frame.endCdeg - frame.startCdeg) % 36000u;
-    const float angle = frame.startCdeg + span * fraction;
-    return (angle >= 36000.0f ? angle - 36000.0f : angle) * 0.0001745329252f;
+    const float angle = frame.startCdeg + spanCdeg(frame) * fraction;
+    return (angle >= turnCdeg ? angle - turnCdeg : angle) * 0.0001745329252f;
 }
 
 uint8_t crc8(const uint8_t* data, size_t size) {
@@ -97,7 +102,7 @@ bool Parser::push(uint8_t byte, Frame& out) {
     const uint16_t start = word(bytes_ + 4);
     const uint16_t end = word(bytes_ + 42);
     const uint16_t stamp = word(bytes_ + 44);
-    if (start >= 36000 || end >= 36000 || stamp > 30000) {
+    if (start >= turnCdeg || end >= turnCdeg || stamp > stampWrapMs) {
         ++badFields_;
         return false;
     }

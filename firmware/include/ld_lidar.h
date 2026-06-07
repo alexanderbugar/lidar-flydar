@@ -6,6 +6,8 @@
 namespace ld {
 constexpr size_t frameBytes = 47;
 constexpr size_t pointCount = 12;
+constexpr unsigned turnCdeg = 36000;
+constexpr unsigned stampWrapMs = 30000;
 
 struct Point {
     uint16_t mm;
@@ -20,6 +22,7 @@ struct Frame {
     uint16_t stampMs;
 };
 
+unsigned spanCdeg(const Frame& frame);
 float angleRad(const Frame& frame, size_t point);
 uint8_t crc8(const uint8_t* data, size_t size);
 
