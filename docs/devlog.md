@@ -35,3 +35,9 @@ there is an icp-try branch. two static scans with overlap mostly line up
 if they're already close. during one sweep every wedge gets a different
 error, so a single rigid transform just slides the mess around.
 leaving that branch here.
+
+### 2026-06-28
+
+calling the desk build 0.1. keep the raw packets if doing anything with
+the cloud later. i kept the wrong ply from the hallway and now have
+nothing to recalibrate against. todo: camera bracket and a common clock.
